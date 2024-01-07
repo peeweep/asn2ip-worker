@@ -3,15 +3,20 @@ addEventListener('fetch', event => {
 })
 
 async function handleRequest(request) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, url } = new URL(request.url);
 
   // 获取请求中的资源参数
   const resource = searchParams.get('resource');
   // 获取请求中的类型参数，默认为ipv4
   const type = searchParams.get('type') || 'ipv4';
 
-  if (!resource) {
-    return new Response('Resource parameter is missing.', { status: 400 });
+  // 获取主机名（域名）
+  const hostname = request.headers.get('host')
+
+  // 如果没有资源参数或者访问主页，则返回示例文字
+  if (!resource || request.url.pathname === '/') {
+    const exampleText = `Example Cloudflare AS13335:\nhttps://${hostname}/geoip?resource=13335\nhttps://${hostname}/geoip?resource=13335&type=ipv4\nhttps://${hostname}/geoip?resource=13335&type=ipv6\n`;
+    return new Response(exampleText, { status: 200, headers: { 'Content-Type': 'text/plain' } });
   }
 
   try {
