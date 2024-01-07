@@ -1,0 +1,48 @@
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
+
+async function handleRequest(request) {
+  const { searchParams } = new URL(request.url);
+
+  // 获取请求中的资源参数
+  const resource = searchParams.get('resource');
+  // 获取请求中的类型参数，默认为ipv4
+  const type = searchParams.get('type') || 'ipv4';
+
+  if (!resource) {
+    return new Response('Resource parameter is missing.', { status: 400 });
+  }
+
+  try {
+    const apiUrl = `https://stat.ripe.net/data/ris-prefixes/data.json?list_prefixes=true&types=o&resource=${resource}`;
+
+    const response = await fetch(apiUrl);
+
+    if (response.ok) {
+      const result = await response.json();
+
+      let addresses;
+      if (type === 'ipv4') {
+        addresses = result.data.prefixes.v4.originating;
+      } else if (type === 'ipv6') {
+        addresses = result.data.prefixes.v6.originating;
+      } else {
+        return new Response('Invalid type parameter. Use "ipv4" or "ipv6".', { status: 400 });
+      }
+
+      if (addresses && addresses.length > 0) {
+        // 构建响应
+        const responseBody = `${addresses.join('\n')}`;
+        return new Response(responseBody, { status: 200 });
+      } else {
+        return new Response(`No ${type.toUpperCase()} addresses found for AS${resource}.`, { status: 404 });
+      }
+    } else {
+      return new Response(`Error fetching data from RIPE API. Status: ${response.status}`, { status: 500 });
+    }
+  } catch (error) {
+    return new Response(`An error occurred: ${error.message}`, { status: 500 });
+  }
+}
+
