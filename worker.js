@@ -37,6 +37,14 @@ async function handleRequest(request) {
       }
 
       if (addresses && addresses.length > 0) {
+        // 对IPv4和IPv6地址进行排序
+        addresses.sort((a, b) => {
+          const ipA = type === 'ipv4' ? a : `[${a}]`; // 将IPv6地址用方括号括起来
+          const ipB = type === 'ipv4' ? b : `[${b}]`;
+
+          return ipA.localeCompare(ipB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
         // 构建响应
         const responseBody = `${addresses.join('\n')}`;
         return new Response(responseBody, { status: 200 });
